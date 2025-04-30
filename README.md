@@ -1,0 +1,1 @@
+# sonarqube-to-jira-automation
