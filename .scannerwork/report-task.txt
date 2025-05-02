@@ -1,0 +1,6 @@
+projectKey=Sonarqube-to-Jira-Automation
+serverUrl=http://localhost:9000
+serverVersion=25.4.0.105899
+dashboardUrl=http://localhost:9000/dashboard?id=Sonarqube-to-Jira-Automation
+ceTaskId=eba5ff30-551d-4d38-9123-30e9e2c37a31
+ceTaskUrl=http://localhost:9000/api/ce/task?id=eba5ff30-551d-4d38-9123-30e9e2c37a31
