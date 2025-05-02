@@ -22,9 +22,7 @@ app.get('/', (req, res) => {
     res.status(200).json({ status: 'up', message: 'SonarQube webhook server is running' });
 });
 
-
-// for Jira projects
-
+// get projects from Jira
 app.get('/jira-projects', async (req, res) => {
     console.log('call from webhook server to fetch Jira projects');
     try {
@@ -54,8 +52,7 @@ app.get('/jira-projects', async (req, res) => {
 });
 
 
-// fetch issues from SonarQube
-
+// get issues from SonarQube
 app.get('/sonarqube-issues', async (req, res) => {
     const sonarUrl = process.env.SONARQUBE_URL;
     const sonarToken = process.env.SONARQUBE_TOKEN;
@@ -78,6 +75,8 @@ app.get('/sonarqube-issues', async (req, res) => {
     }
 });
 
+
+// Webhook endpoint for SonarQube
 app.post('/sonarqube-webhook', async (req, res) => {
     console.log('Headers:', req.headers);
     console.log('Body:', req.body);
@@ -157,6 +156,9 @@ app.post('/sonarqube-webhook', async (req, res) => {
         });
     }
 });
+
+
+
 
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
