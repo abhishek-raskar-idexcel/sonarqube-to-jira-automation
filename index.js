@@ -77,31 +77,237 @@ app.get('/sonarqube-issues', async (req, res) => {
 
 
 // Webhook endpoint for SonarQube
+// app.post('/sonarqube-webhook', async (req, res) => {
+//     console.log('Headers:', req.headers);
+//     console.log('Body:', req.body);
+//     console.log('Webhook endpoint hit with data:', req.body);
+//     const sonarData = req.body;
+//     console.log('Received from SonarQube:', JSON.stringify(req.body, null, 2));
+
+//     // Check if payload has the expected structure
+//     if (!sonarData.issues || !Array.isArray(sonarData.issues)) {
+//         return res.status(400).json({
+//             error: 'Invalid payload structure',
+//             message: 'Expecting issues array in the payload'
+//         });
+//     }
+
+//     // Create Jira Ticket
+//     try {
+//         const createdTickets = [];
+
+//         for (const issue of sonarData.issues) {
+//             // Create Jira payload with required fields
+//             const jiraPayload = {
+//                 fields: {
+//                     project: { key: jiraConfig.defaultProject },
+//                     summary: `SonarQube Issue: ${issue.rule || issue.key}`,
+//                     description: {
+//                         type: "doc",
+//                         version: 1,
+//                         content: [
+//                             {
+//                                 type: "paragraph",
+//                                 content: [
+//                                     {
+//                                         type: "text",
+//                                         text: `Issue: ${issue.message}\nComponent: ${issue.component}\nSeverity: ${issue.severity}`
+//                                     }
+//                                 ]
+//                             }
+//                         ]
+//                     },
+//                     issuetype: { name: "Bug" },
+//                     components: [
+//                         {
+//                             name: jiraConfig.defaultProject
+//                         }
+//                     ],
+//                     customfield_10201: {
+//                         value: "Financial Analyzer (FA)"
+//                     },
+//                     priority: {
+//                         name: "Medium"
+//                     }
+//                 }
+//             };
+
+//             const jiraResponse = await axios.post(jiraConfig.issueUrl, jiraPayload, {
+//                 auth: jiraConfig.auth,
+//                 headers: {
+//                     'Accept': 'application/json',
+//                     'Content-Type': 'application/json'
+//                 }
+//             });
+
+//             console.log('Jira ticket created:', jiraResponse.data.key);
+//             createdTickets.push(jiraResponse.data.key);
+//         }
+
+//         res.status(200).json({
+//             message: 'Jira tickets created successfully',
+//             tickets: createdTickets
+//         });
+//     } catch (error) {
+//         console.error('Error creating Jira ticket:', error.response?.data || error.message);
+//         res.status(500).json({
+//             error: 'Failed to create Jira ticket',
+//             details: error.response?.data || error.message
+//         });
+//     }
+// });
+
+// app.post('/sonarqube-webhook', async (req, res) => {
+//     console.log('Webhook endpoint hit');
+
+//     try {
+//         // Fetch issues from the SonarQube issues endpoint
+//         const sonarUrl = process.env.SONARQUBE_URL;
+//         const sonarToken = process.env.SONARQUBE_TOKEN;
+
+//         const sonarResponse = await axios.get(sonarUrl, {
+//             headers: {
+//                 'Authorization': `Basic ${Buffer.from(`${sonarToken}:`).toString('base64')}`,
+//                 'Accept': 'application/json'
+//             }
+//         });
+
+//         const sonarData = sonarResponse.data;
+
+//         // Check if payload has the expected structure
+//         if (!sonarData.issues || !Array.isArray(sonarData.issues)) {
+//             return res.status(400).json({
+//                 error: 'Invalid payload structure',
+//                 message: 'Expecting issues array in the payload'
+//             });
+//         }
+
+//         // Create Jira Tickets
+//         const createdTickets = [];
+
+//         for (const issue of sonarData.issues) {
+//             const fileName = issue.component.split(':').pop(); 
+//             const summary = `${issue.message} in ${fileName}`; 
+//             const description = `
+//             ### Issue Details :
+//             - **Message** ${issue.message}
+//             - **File:** ${fileName}
+//             - **Severity:** ${issue.severity}
+//             - **Line:** ${issue.textRange?.startLine || 'N/A'}
+//             - **Effort:** ${issue.effort || 'N/A'}
+
+//             ### Recommendation : 
+//                 ${issue.message}
+//                     `.trim(); 
+
+//             const jiraPayload = {
+//                 fields: {
+//                     project: { key: jiraConfig.defaultProject },
+//                     summary: summary,
+//                     description: {
+//                         type: "doc",
+//                         version: 1,
+//                         content: [
+//                             {
+//                                 type: "paragraph",
+//                                 content: [
+//                                     {
+//                                         type: "text",
+//                                         text: description
+//                                     }
+//                                 ]
+//                             }
+//                         ]
+//                     },
+//                     issuetype: { name: "Bug" },
+//                     components: [
+//                         {
+//                             name: jiraConfig.defaultProject
+//                         }
+//                     ],
+//                     customfield_10201: {
+//                         value: "Financial Analyzer (FA)"
+//                     },
+//                     priority: {
+//                         name: issue.severity === "BLOCKER" ? "High" : issue.severity === "MAJOR" ? "Medium" : "Low"
+//                     }
+//                 }
+//             };
+
+//             const jiraResponse = await axios.post(jiraConfig.issueUrl, jiraPayload, {
+//                 auth: jiraConfig.auth,
+//                 headers: {
+//                     'Accept': 'application/json',
+//                     'Content-Type': 'application/json'
+//                 }
+//             });
+
+//             console.log('Jira ticket created:', jiraResponse.data.key);
+//             createdTickets.push(jiraResponse.data.key);
+//         }
+
+//         res.status(200).json({
+//             message: 'Jira tickets created successfully',
+//             tickets: createdTickets
+//         });
+//     } catch (error) {
+//         console.error('Error processing webhook:', error.response?.data || error.message);
+//         res.status(500).json({
+//             error: 'Failed to process webhook',
+//             details: error.response?.data || error.message
+//         });
+//     }
+// });
+
 app.post('/sonarqube-webhook', async (req, res) => {
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    console.log('Webhook endpoint hit with data:', req.body);
-    const sonarData = req.body;
-    console.log('Received from SonarQube:', JSON.stringify(req.body, null, 2));
+    console.log('Webhook endpoint hit');
 
-    // Check if payload has the expected structure
-    if (!sonarData.issues || !Array.isArray(sonarData.issues)) {
-        return res.status(400).json({
-            error: 'Invalid payload structure',
-            message: 'Expecting issues array in the payload'
-        });
-    }
-
-    // Create Jira Ticket
     try {
+        // Step 1: Mock SonarQube issues response
+        console.log('Using mocked SonarQube issues response...');
+        const sonarData = {
+            issues: [
+                {
+                    message: "Test issue 1",
+                    component: "test:file1.js",
+                    severity: "MAJOR",
+                    textRange: { startLine: 10 },
+                    effort: "5min",
+                },
+                {
+                    message: "Test issue 2",
+                    component: "test:file2.js",
+                    severity: "BLOCKER",
+                    textRange: { startLine: 20 },
+                    effort: "10min",
+                },
+            ],
+        };
+
+        console.log(`Fetched ${sonarData.issues.length} issues from mocked SonarQube response`);
+
+        // Step 2: Create Jira Tickets
         const createdTickets = [];
 
         for (const issue of sonarData.issues) {
-            // Create Jira payload with required fields
+            const fileName = issue.component.split(':').pop();
+            const summary = `${issue.message} in ${fileName}`;
+            const description = `
+            ### Issue Details:
+            - **Message**: ${issue.message}
+            - **File**: ${fileName}
+            - **Severity**: ${issue.severity}
+            - **Line**: ${issue.textRange?.startLine || 'N/A'}
+            - **Effort**: ${issue.effort || 'N/A'}
+
+            ### Recommendation:
+            ${issue.message}
+            `.trim();
+
             const jiraPayload = {
                 fields: {
                     project: { key: jiraConfig.defaultProject },
-                    summary: `SonarQube Issue: ${issue.rule || issue.key}`,
+                    summary: summary,
                     description: {
                         type: "doc",
                         version: 1,
@@ -111,55 +317,53 @@ app.post('/sonarqube-webhook', async (req, res) => {
                                 content: [
                                     {
                                         type: "text",
-                                        text: `Issue: ${issue.message}\nComponent: ${issue.component}\nSeverity: ${issue.severity}`
-                                    }
-                                ]
-                            }
-                        ]
+                                        text: description,
+                                    },
+                                ],
+                            },
+                        ],
                     },
                     issuetype: { name: "Bug" },
                     components: [
                         {
-                            name: jiraConfig.defaultProject
-                        }
+                            name: jiraConfig.defaultProject,
+                        },
                     ],
                     customfield_10201: {
-                        value: "Financial Analyzer (FA)"
+                        value: "Financial Analyzer (FA)", // Replace with a valid value for your Jira instance
                     },
                     priority: {
-                        name: "Medium"
-                    }
-                }
+                        name: issue.severity === "BLOCKER" ? "High" : issue.severity === "MAJOR" ? "Medium" : "Low",
+                    },
+                },
             };
 
+            console.log(`Creating Jira ticket for issue: ${summary}`);
             const jiraResponse = await axios.post(jiraConfig.issueUrl, jiraPayload, {
                 auth: jiraConfig.auth,
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
             });
 
             console.log('Jira ticket created:', jiraResponse.data.key);
             createdTickets.push(jiraResponse.data.key);
         }
 
+        // Step 3: Return success response
         res.status(200).json({
             message: 'Jira tickets created successfully',
-            tickets: createdTickets
+            tickets: createdTickets,
         });
     } catch (error) {
-        console.error('Error creating Jira ticket:', error.response?.data || error.message);
+        console.error('Error processing webhook:', error.response?.data || error.message);
         res.status(500).json({
-            error: 'Failed to create Jira ticket',
-            details: error.response?.data || error.message
+            error: 'Failed to process webhook',
+            details: error.response?.data || error.message,
         });
     }
 });
-
-
-
-
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
 });
